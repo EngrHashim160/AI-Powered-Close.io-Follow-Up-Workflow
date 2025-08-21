@@ -1,0 +1,456 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trigger",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        -60
+      ],
+      "id": "ac847d27-1071-46f7-a9b5-ba799bbf56f1",
+      "name": "Webhook",
+      "webhookId": "9af52be7-25df-4d29-8f13-c1978062f2c1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.close.com/api/v1/lead/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"url\": \"https://neoneph.app.n8n.cloud/webhook/task-completed\",\n  \"events\": [\n    {\n      \"object_type\": \"task.lead\",\n      \"action\": \"completed\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -100,
+        -60
+      ],
+      "id": "dbdddf3b-7b59-4995-a5e8-5d5d21232026",
+      "name": "Close connection",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "mAhwrIOeNiJqasBT",
+          "name": "Close.io Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-3.5-TURBO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{$node[\"Code - Merge Lead Data\"].json[\"enhanced_prompt\"]}}\n\nPlease write a friendly, dynamic, and professional follow-up message ready to send. In the message, do not include any details related to the deal value. Use the opportunities description to craft a follow up message so specific that they propsect would believe I know them better than themself. Also focus on whatever it was that kept them from moving forward and focus the follow up message on offering solutions to move beyond the roadblock. Most importantly, we want to followup message to generate a response so let's focus on that. Each message should be completely different and referencce a specific detail from the client using \"opportunity_description\". In the message also specifically reference the reason they didn't move forward."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1580,
+        -60
+      ],
+      "id": "5842c7a9-f729-4617-afc2-e30c81a8ba2d",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "WWhsdwilkAJpTGvu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.close.com/api/v1/activity/sms/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contact_id\": \"{{ $json.contact_id }}\",\n  \"lead_id\": \"{{ $json.lead_id }}\",\n  \"remote_phone\": \"{{ $json.contact_phone }}\",\n  \"local_phone\": \"+13304037241\",\n  \"text\": \"{{ $json.message }}\",\n  \"status\": \"outbox\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2740,
+        220
+      ],
+      "id": "2ff3f8ee-8a6d-4136-ade7-999d2b41d861",
+      "name": "HTTP Request - SMS Send",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "mAhwrIOeNiJqasBT",
+          "name": "Close.io Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.close.com/api/v1/lead/{{$node[\"If\"].json[\"body\"][\"event\"][\"lead_id\"]}}\n",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        -60
+      ],
+      "id": "068c7f25-ed83-45e8-b273-e0f0f362faac",
+      "name": "HTTP Request - Lead Info",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "mAhwrIOeNiJqasBT",
+          "name": "Close.io Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.close.com/api/v1/contact/?lead_id={{$('HTTP Request - Lead Info').item.json.id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        -60
+      ],
+      "id": "29baa336-82df-4bd4-9fcf-6a7c90b6d22a",
+      "name": "HTTP Request - Contact",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "mAhwrIOeNiJqasBT",
+          "name": "Close.io Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "485cac45-e790-4670-bd77-3abfea098218",
+              "leftValue": "={{ $json.body.event.data.text}}",
+              "rightValue": "Follow-Up",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -360,
+        -40
+      ],
+      "id": "32aad4c9-83cb-4ab7-908d-a09a6539689e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.close.com/api/v1/opportunity/?lead_id={{$node[\"If\"].json[\"body\"][\"event\"][\"lead_id\"]}}\n",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        -60
+      ],
+      "id": "79bb6f38-cf28-4cba-8452-c5bd809f95fa",
+      "name": "HTTP Request - Get Opportunities",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "mAhwrIOeNiJqasBT",
+          "name": "Close.io Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.close.com/api/v1/activity/?lead_id={{$json[\"data\"][0][\"lead_id\"]}}&type__in=email,sms,sms_reply&order_by=-date_created&limit=50",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        -60
+      ],
+      "id": "79438314-72dc-46e6-a41e-c804f76c92dd",
+      "name": "HTTP Request - Get Communications",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "mAhwrIOeNiJqasBT",
+          "name": "Close.io Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all the data from previous nodes\nconst contactDataRaw = $node[\"HTTP Request - Contact\"].json;\nconst opportunities = $node[\"HTTP Request - Get Opportunities\"].json.data || [];\nconst communications = $node[\"HTTP Request - Get Communications\"].json.data || [];\n\n// Extract contacts array\nconst contacts = contactDataRaw.data || [];\n\n// Find first contact with an email\nconst contactWithEmail = contacts.find(c => Array.isArray(c.emails) && c.emails.length > 0 && c.emails[0].email);\n\n// Find first contact with a phone\nconst contactWithPhone = contacts.find(c => Array.isArray(c.phones) && c.phones.length > 0 && c.phones[0].phone);\n\n// Extract email and phone\nconst email = contactWithEmail?.emails?.[0]?.email || '';\nconst phone = contactWithPhone?.phones?.[0]?.phone || '';\n\n// Fallback contact (for name, id, lead_id)\nconst fallbackContact = contactWithEmail || contactWithPhone || contacts[0] || {};\nconst leadId = fallbackContact.lead_id || '';\n\n// Process opportunity data\nconst primaryOpp = opportunities[0] || {};\n\n// ✅ Fix: Use _type instead of type\nconst emails = communications.filter(c => c._type?.toLowerCase() === 'email');\nconst sms = communications.filter(c => ['sms', 'sms_reply'].includes(c._type?.toLowerCase()));\n\n// Email and SMS counts\nconst emailCount = emails.length;\nconst smsCount = sms.length;\n\n// Get recent message content\nconst recentEmails = emails.slice(0, 3).map(e => ({\n  direction: e.direction,\n  date: e.date_created,\n  content: (e.envelope?.subject || 'No subject') + ' - ' + (e.body ? e.body.substring(0, 150) + '...' : 'No content')\n}));\n\nconst recentSMS = sms.slice(0, 5).map(s => ({\n  direction: s.direction,\n  date: s.date_created,\n  content: s.text || 'No content'\n}));\n\n// Communication analysis\nconst preferredChannel = smsCount > emailCount ? 'SMS' : 'Email';\nconst lastContactDate = communications[0]?.date_created;\nconst daysSinceContact = lastContactDate\n  ? Math.floor((new Date() - new Date(lastContactDate)) / (1000 * 60 * 60 * 24))\n  : 999;\n\n// Build enhanced context for ChatGPT\nconst enhancedContext = `LEAD ANALYSIS & FOLLOW-UP REQUEST\n\nContact: ${fallbackContact.display_name || fallbackContact.name || 'Unknown'}\nEmail: ${email || 'No email'}\nPhone: ${phone || 'No phone'}\n\nOPPORTUNITY DETAILS:\n- Value: $${primaryOpp.value || 0}\n- Stage: ${primaryOpp.status_label || 'No stage'}\n- Description: ${primaryOpp.note || 'No opportunity description available'}\n\nCOMMUNICATION HISTORY:\n- Total Emails: ${emailCount}\n- Total SMS Messages: ${smsCount}\n- Preferred Channel Based on History: ${preferredChannel}\n- Days Since Last Contact: ${daysSinceContact}\n\nRECENT EMAIL CONVERSATIONS:\n${recentEmails.length > 0 ? recentEmails.map(e => `${e.direction}: ${e.content} (${e.date})`).join('\\n') : 'No recent emails'}\n\nRECENT SMS CONVERSATIONS:\n${recentSMS.length > 0 ? recentSMS.map(s => `${s.direction}: ${s.content} (${s.date})`).join('\\n') : 'No recent SMS messages'}\n\nTASK: Analyze this lead and determine the best follow-up approach based on the OPPORTUNITY DESCRIPTION above.\n\nConsider:\n1. Communication preferences and response patterns\n2. Opportunity stage and urgency\n3. Recent conversation context\n4. Time since last contact\n5. Deal value and professionalism needed\n6. The specific opportunity description provided\n\nRespond in this EXACT JSON format:\n{\n  \"recommended_channel\": \"SMS\" or \"Email\",\n  \"message\": \"Your follow-up message here\",\n  \"reasoning\": \"Brief explanation of why you chose this channel\"\n}`;\n\nreturn [{\n  json: {\n    name: fallbackContact.display_name || fallbackContact.name || '',\n    email,\n    phone,\n    contact_id: fallbackContact.id || '',\n    lead_id: leadId,\n    enhanced_prompt: enhancedContext,\n    preferred_channel: preferredChannel,\n    opportunity_value: primaryOpp.value || 0,\n    opportunity_description: primaryOpp.note || '',\n    days_since_contact: daysSinceContact\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        -60
+      ],
+      "id": "23cd03fc-181c-4aab-af8b-be34253f50fc",
+      "name": "Code - Merge Lead Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the ChatGPT response - handle different response formats\nlet aiResponse;\n\ntry {\n  // Try the standard OpenAI API format first\n  if ($node[\"OpenAI\"].json.choices && $node[\"OpenAI\"].json.choices[0]) {\n    aiResponse = $node[\"OpenAI\"].json.choices[0].message.content;\n  } \n  // Try alternative format\n  else if ($node[\"OpenAI\"].json.message && $node[\"OpenAI\"].json.message.content) {\n    aiResponse = $node[\"OpenAI\"].json.message.content;\n  }\n  // Try direct content format\n  else if ($node[\"OpenAI\"].json.content) {\n    aiResponse = $node[\"OpenAI\"].json.content;\n  }\n  // Fallback - use the entire response as string\n  else {\n    aiResponse = JSON.stringify($node[\"OpenAI\"].json);\n  }\n} catch (error) {\n  aiResponse = \"Error reading AI response\";\n}\n\nlet parsedResponse;\ntry {\n  // Try to parse as JSON\n  parsedResponse = JSON.parse(aiResponse);\n} catch (error) {\n  // If JSON parsing fails, treat as plain text message and default to SMS\n  parsedResponse = {\n    recommended_channel: \"SMS\",\n    message: aiResponse,\n    reasoning: \"Default to SMS - AI response was not in JSON format\"\n  };\n}\n\n// Get contact info and lead ID for routing\nconst contactData = $node[\"Code - Merge Lead Data\"].json;\n\nreturn [{\n  json: {\n    channel: parsedResponse.recommended_channel,\n    message: parsedResponse.message,\n    reasoning: parsedResponse.reasoning,\n    contact_name: contactData.name,\n    contact_email: contactData.email,\n    contact_phone: contactData.phone,\n    contact_id: contactData.contact_id,\n    lead_id: contactData.lead_id   // ✅ Include lead ID for Close.com\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        -60
+      ],
+      "id": "0cccacfd-d0a5-4c15-b5b4-0495f27efb95",
+      "name": "Code - Process AI Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "28c01107-48de-470e-bb69-7144ea9a425b",
+              "leftValue": "={{ $json.channel }}",
+              "rightValue": "Email",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2220,
+        -60
+      ],
+      "id": "cdd16cb2-017a-4190-b3cb-a5b52ecba9e2",
+      "name": "If - Route by Channel"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.close.com/api/v1/activity/email/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": [\"{{ $json.contact_email }}\"],\n  \"lead_id\": \"{{ $json.lead_id }}\",\n  \"contact_id\": \"{{ $json.contact_id }}\",\n  \"subject\": \"Quick follow-up on your business opportunity\",\n  \"body_text\": \"{{ $json.message }}\",\n  \"status\": \"outbox\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2740,
+        -240
+      ],
+      "id": "472d5f33-1a44-40fa-a9c6-9549e3cde6fd",
+      "name": "HTTP Request - Send Email",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "mAhwrIOeNiJqasBT",
+          "name": "Close.io Credentials"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Close connection": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Lead Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Code - Process AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Lead Info": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Contact": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Opportunities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Close connection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Get Opportunities": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Communications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Get Communications": {
+      "main": [
+        [
+          {
+            "node": "Code - Merge Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Merge Lead Data": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Process AI Response": {
+      "main": [
+        [
+          {
+            "node": "If - Route by Channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Route by Channel": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request - SMS Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "77aa5748-99bc-4b98-8f8a-88acef941360",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "51d7ed8c5395ebbddc19afedd9c31ebc1e03c3420790ba699d4ffc35bb335283"
+  },
+  "id": "adA8LFoxFd2HEBqJ",
+  "tags": []
+}

@@ -1,5 +1,8 @@
 # 🤖 AI-Powered Close.io Follow-Up Workflow
 
+![AI-Powered Close.io Follow-Up Workflow](AI-Powered%20Close.io%20Follow-Up%20Workflow.png)
+
+
 An **n8n automation** that integrates **Close.io** with **OpenAI** to automatically craft and send highly personalized follow-up messages to leads after a "Follow-Up" task is completed.  
 The workflow analyzes the lead’s data, recent communications, and opportunity details to choose the best channel (Email or SMS) and generate a tailored, response-driven message.
 
